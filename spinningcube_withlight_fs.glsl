@@ -26,10 +26,19 @@ uniform vec3 view_pos;
 
 void main() {
   // Ambient
+  vec3 ambient = light.ambient * material.ambient;
 
+  vec3 light_dir = normalize(light.position - frag_3Dpos);
+  
   // Diffuse
+  float diff = max(dot(vs_normal, light_dir), 0.0);
+  vec3 diffuse = light.diffuse * diff * material.diffuse;
 
   // Specular
+  vec3 view_dir = normalize(view_pos - frag_3Dpos);
+  vec3 reflect_dir = reflect(-light_dir, vs_normal);
+  float spec = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
+  vec3 specular = light.specular * spec * material.specular;
 
   vec3 result = ambient + diffuse + specular;
   frag_col = vec4(result, 1.0);
