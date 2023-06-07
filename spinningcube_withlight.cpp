@@ -12,7 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::perspective
 #include <glm/gtc/type_ptr.hpp>
 
-#include "textfile_ALT.h"
+#include "textfile.h"
 
 int gl_width = 640;
 int gl_height = 480;
@@ -24,6 +24,10 @@ void render(double);
 GLuint shader_program = 0; // shader program to set render pipeline
 GLuint vao = 0; // Vertext Array Object to set input data
 GLint model_location, view_location, proj_location; // Uniforms for transformation matrices
+GLint normal_matrix_location;
+GLint light_position_location, light_ambient_location, light_diffuse_location, light_specular_location; // Uniforms for light
+GLint material_diffuse_location, material_specular_location, material_shininess_location, material_ambient_location; // Uniforms for material
+GLint cam_pos_location;
 
 // Shader names
 const char *vertexFileName = "spinningcube_withlight_vs.glsl";
@@ -152,53 +156,53 @@ int main() {
   //       6        5
   //
   const GLfloat vertex_positions[] = {
-    -0.25f, -0.25f, -0.25f, // 1
-    -0.25f,  0.25f, -0.25f, // 0
-     0.25f, -0.25f, -0.25f, // 2
+    -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 1
+    -0.25f,  0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 0
+     0.25f, -0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 2
 
-     0.25f,  0.25f, -0.25f, // 3
-     0.25f, -0.25f, -0.25f, // 2
-    -0.25f,  0.25f, -0.25f, // 0
+     0.25f,  0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 3
+     0.25f, -0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 2
+    -0.25f,  0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 0
 
-     0.25f, -0.25f, -0.25f, // 2
-     0.25f,  0.25f, -0.25f, // 3
-     0.25f, -0.25f,  0.25f, // 5
+     0.25f, -0.25f, -0.25f,   1.0f, 0.0f, 0.0f,  // 2
+     0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,  // 3
+     0.25f, -0.25f,  0.25f,   1.0f, 0.0f, 0.0f,  // 5
 
-     0.25f,  0.25f,  0.25f, // 4
-     0.25f, -0.25f,  0.25f, // 5
-     0.25f,  0.25f, -0.25f, // 3
+     0.25f,  0.25f,  0.25f,   1.0f, 0.0f, 0.0f,  // 4
+     0.25f, -0.25f,  0.25f,   1.0f, 0.0f, 0.0f,  // 5
+     0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,  // 3
 
-     0.25f, -0.25f,  0.25f, // 5
-     0.25f,  0.25f,  0.25f, // 4
-    -0.25f, -0.25f,  0.25f, // 6
+     0.25f, -0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 5
+     0.25f,  0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 4
+    -0.25f, -0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 6
 
-    -0.25f,  0.25f,  0.25f, // 7
-    -0.25f, -0.25f,  0.25f, // 6
-     0.25f,  0.25f,  0.25f, // 4
+    -0.25f,  0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 7
+    -0.25f, -0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 6
+     0.25f,  0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 4
 
-    -0.25f, -0.25f,  0.25f, // 6
-    -0.25f,  0.25f,  0.25f, // 7
-    -0.25f, -0.25f, -0.25f, // 1
+    -0.25f, -0.25f,  0.25f,   -1.0f, 0.0f, 0.0f, // 6
+    -0.25f,  0.25f,  0.25f,   -1.0f, 0.0f, 0.0f, // 7
+    -0.25f, -0.25f, -0.25f,   -1.0f, 0.0f, 0.0f, // 1
 
-    -0.25f,  0.25f, -0.25f, // 0
-    -0.25f, -0.25f, -0.25f, // 1
-    -0.25f,  0.25f,  0.25f, // 7
+    -0.25f,  0.25f, -0.25f,   -1.0f, 0.0f, 0.0f, // 0
+    -0.25f, -0.25f, -0.25f,   -1.0f, 0.0f, 0.0f, // 1
+    -0.25f,  0.25f,  0.25f,   -1.0f, 0.0f, 0.0f, // 7
 
-     0.25f, -0.25f, -0.25f, // 2
-     0.25f, -0.25f,  0.25f, // 5
-    -0.25f, -0.25f, -0.25f, // 1
+     0.25f, -0.25f, -0.25f,   0.0f, -1.0f, 0.0f, // 2
+     0.25f, -0.25f,  0.25f,   0.0f, -1.0f, 0.0f, // 5
+    -0.25f, -0.25f, -0.25f,   0.0f, -1.0f, 0.0f, // 1
 
-    -0.25f, -0.25f,  0.25f, // 6
-    -0.25f, -0.25f, -0.25f, // 1
-     0.25f, -0.25f,  0.25f, // 5
+    -0.25f, -0.25f,  0.25f,   0.0f, -1.0f, 0.0f, // 6
+    -0.25f, -0.25f, -0.25f,   0.0f, -1.0f, 0.0f, // 1
+     0.25f, -0.25f,  0.25f,   0.0f, -1.0f, 0.0f, // 5
 
-     0.25f,  0.25f,  0.25f, // 4
-     0.25f,  0.25f, -0.25f, // 3
-    -0.25f,  0.25f,  0.25f, // 7
+     0.25f,  0.25f,  0.25f,   0.0f, 1.0f, 0.0f,  // 4
+     0.25f,  0.25f, -0.25f,   0.0f, 1.0f, 0.0f,  // 3
+    -0.25f,  0.25f,  0.25f,   0.0f, 1.0f, 0.0f,  // 7
 
-    -0.25f,  0.25f, -0.25f, // 0
-    -0.25f,  0.25f,  0.25f, // 7
-     0.25f,  0.25f, -0.25f  // 3
+    -0.25f,  0.25f, -0.25f,   0.0f, 1.0f, 0.0f,  // 0
+    -0.25f,  0.25f,  0.25f,   0.0f, 1.0f, 0.0f,  // 7
+     0.25f,  0.25f, -0.25f,   0.0f, 1.0f, 0.0f,  // 3
   };
 
 // Vertex Buffer Object (for vertex coordinates)
@@ -209,10 +213,12 @@ int main() {
 
   // Vertex attributes
   // 0: vertex position (x, y, z)
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), NULL);
   glEnableVertexAttribArray(0);
 
   // 1: vertex normals (x, y, z)
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
 
   // Unbind vbo (it was conveniently registered by VertexAttribPointer)
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -231,7 +237,16 @@ int main() {
   model_location = glGetUniformLocation(shader_program, "model");
   view_location = glGetUniformLocation(shader_program, "view");
   proj_location = glGetUniformLocation(shader_program, "projection");
-  // [...]
+  normal_matrix_location = glGetUniformLocation(shader_program, "normal_to_world");
+  cam_pos_location = glGetUniformLocation(shader_program, "view_pos");
+  light_position_location = glGetUniformLocation(shader_program, "light.position");
+  light_ambient_location = glGetUniformLocation(shader_program, "light.ambient");
+  light_diffuse_location = glGetUniformLocation(shader_program, "light.diffuse");
+  light_specular_location = glGetUniformLocation(shader_program, "light.specular");
+  material_diffuse_location = glGetUniformLocation(shader_program, "material.diffuse");
+  material_specular_location = glGetUniformLocation(shader_program, "material.specular");
+  material_ambient_location = glGetUniformLocation(shader_program, "material.ambient");
+  material_shininess_location = glGetUniformLocation(shader_program, "material.shininess");
 
 // Render loop
   while(!glfwWindowShouldClose(window)) {
@@ -266,16 +281,43 @@ void render(double currentTime) {
   view_matrix = glm::lookAt(                 camera_pos,  // pos
                             glm::vec3(0.0f, 0.0f, 0.0f),  // target
                             glm::vec3(0.0f, 1.0f, 0.0f)); // up
+  glUniformMatrix4fv(view_location, 1, GL_FALSE, glm::value_ptr(view_matrix));
 
   // Moving cube
-  // model_matrix = glm::rotate(model_matrix,
-  //   [...]
-  //
+  model_matrix = glm::translate(model_matrix, glm::vec3(0.0f, 0.0f, -4.0f));
+  model_matrix = glm::translate(model_matrix,
+                             glm::vec3(sinf(2.1f * f) * 0.5f,
+                                       cosf(1.7f * f) * 0.5f,
+                                       sinf(1.3f * f) * cosf(1.5f * f) * 2.0f));
+  model_matrix = glm::rotate(model_matrix,
+                          glm::radians((float)currentTime * 45.0f),
+                          glm::vec3(0.0f, 1.0f, 0.0f));
+  model_matrix = glm::rotate(model_matrix,
+                          glm::radians((float)currentTime * 81.0f),
+                          glm::vec3(1.0f, 0.0f, 0.0f));
+  glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(model_matrix));
+
   // Projection
-  // proj_matrix = glm::perspective(glm::radians(50.0f),
-  //   [...]
-  //
+  proj_matrix = glm::perspective(glm::radians(50.0f),
+                                 (float) gl_width / (float) gl_height,
+                                 0.1f, 1000.0f);
+  glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(proj_matrix));
+  
   // Normal matrix: normal vectors to world coordinates
+  glm::mat4 normal_matrix;
+  normal_matrix = glm::transpose(glm::inverse(glm::mat3(model_matrix))); // Cannot use optimized operation
+  glUniformMatrix3fv(normal_matrix_location, 1, GL_FALSE, glm::value_ptr(normal_matrix));
+
+  // Set light, material and camera attbs
+  glUniform3fv(light_position_location, 1, glm::value_ptr(light_pos));
+  glUniform3fv(light_ambient_location, 1, glm::value_ptr(light_ambient));
+  glUniform3fv(light_diffuse_location, 1, glm::value_ptr(light_diffuse));
+  glUniform3fv(light_specular_location, 1, glm::value_ptr(light_specular));
+  glUniform3fv(material_ambient_location, 1, glm::value_ptr(material_ambient));
+  glUniform3fv(material_diffuse_location, 1, glm::value_ptr(material_diffuse));
+  glUniform3fv(material_specular_location, 1, glm::value_ptr(material_specular));
+  glUniform1f(material_shininess_location, material_shininess);
+  glUniform3fv(cam_pos_location, 1, glm::value_ptr(camera_pos));
 
   glDrawArrays(GL_TRIANGLES, 0, 36);
 }
