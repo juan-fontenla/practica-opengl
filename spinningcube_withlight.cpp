@@ -23,9 +23,11 @@ void render(double);
 
 GLuint shader_program = 0; // shader program to set render pipeline
 GLuint vao = 0; // Vertext Array Object to set input data
+GLuint pyramid_vao = 0; // Vertext Array Object to set pyramid data
 GLint model_location, view_location, proj_location; // Uniforms for transformation matrices
 GLint normal_matrix_location;
 GLint light_position_location, light_ambient_location, light_diffuse_location, light_specular_location; // Uniforms for light
+GLint light_position_location2, light_ambient_location2, light_diffuse_location2, light_specular_location2; // Uniforms for second light
 GLint material_diffuse_location, material_specular_location, material_shininess_location, material_ambient_location; // Uniforms for material
 GLint cam_pos_location;
 
@@ -41,6 +43,12 @@ glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
 glm::vec3 light_ambient(0.2f, 0.2f, 0.2f);
 glm::vec3 light_diffuse(0.5f, 0.5f, 0.5f);
 glm::vec3 light_specular(1.0f, 1.0f, 1.0f);
+
+// Other light
+glm::vec3 light_pos2(-1.2f, 1.0f, 2.0f);
+glm::vec3 light_ambient2(0.2f, 0.2f, 0.2f);
+glm::vec3 light_diffuse2(0.5f, 0.5f, 0.5f);
+glm::vec3 light_specular2(1.0f, 1.0f, 1.0f);
 
 // Material
 glm::vec3 material_ambient(1.0f, 0.5f, 0.31f);
@@ -226,6 +234,51 @@ int main() {
   // Unbind vao
   glBindVertexArray(0);
 
+  // Vertex Array Object for pyramid
+  glGenVertexArrays(1, &pyramid_vao);
+  glBindVertexArray(pyramid_vao);
+
+  const GLfloat pyramid_vertex_positions[] = {
+    // Base
+    1.0f,  1.25f, 0.0f,    0.0f, -1.0f, 0.0f,     // 0
+    1.0f,  0.75f, 0.25f,   0.0f, -1.0f, 0.0f,     // 1
+    0.75f, 0.75f, -0.25f,  0.0f, -1.0f, 0.0f,     // 2
+
+    // Sides
+    1.0f,  1.25f, 0.0f,    0.30151f, 0.90453f, -0.30151f, // 0
+    0.75f, 0.75f, -0.25f,  0.30151f, 0.90453f, -0.30151f, // 2
+    1.25f, 0.75f, -0.25f,  0.30151f, 0.90453f, -0.30151f,  // 3
+
+    1.0f,  1.25f, 0.0f,    0.90453f, 0.30151f, 0.30151f, // 0
+    1.25f, 0.75f, -0.25f,  0.90453f, 0.30151f, 0.30151f, // 3
+    1.0f,  0.75f, 0.25f,   0.90453f, 0.30151f, 0.30151f, // 1
+
+    0.75f, 0.75f, -0.25f,  -0.90453f, 0.30151f, 0.30151f,  // 1
+    1.0f,  0.75f, 0.25f,   -0.90453f, 0.30151f, 0.30151f, // 2
+    1.25f, 0.75f, -0.25f,  -0.90453f, 0.30151f, 0.30151f  // 3
+  };
+
+// Vertex Buffer Object (for pyramid vertex coordinates)
+  GLuint pyramid_vbo = 0;
+  glGenBuffers(1, &pyramid_vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, pyramid_vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(pyramid_vertex_positions), pyramid_vertex_positions, GL_STATIC_DRAW);
+
+  // Vertex attributes
+  // 0: vertex position (x, y, z)
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), NULL);
+  glEnableVertexAttribArray(0);
+
+  // 1: vertex normals (x, y, z)
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+
+  // Unbind vbo (it was conveniently registered by VertexAttribPointer)
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  // Unbind vao
+  glBindVertexArray(0);
+
   // Uniforms
   // - Model matrix
   // - View matrix
@@ -243,6 +296,10 @@ int main() {
   light_ambient_location = glGetUniformLocation(shader_program, "light.ambient");
   light_diffuse_location = glGetUniformLocation(shader_program, "light.diffuse");
   light_specular_location = glGetUniformLocation(shader_program, "light.specular");
+  light_position_location2 = glGetUniformLocation(shader_program, "light2.position");
+  light_ambient_location2 = glGetUniformLocation(shader_program, "light2.ambient");
+  light_diffuse_location2 = glGetUniformLocation(shader_program, "light2.diffuse");
+  light_specular_location2 = glGetUniformLocation(shader_program, "light2.specular");
   material_diffuse_location = glGetUniformLocation(shader_program, "material.diffuse");
   material_specular_location = glGetUniformLocation(shader_program, "material.specular");
   material_ambient_location = glGetUniformLocation(shader_program, "material.ambient");
@@ -313,12 +370,20 @@ void render(double currentTime) {
   glUniform3fv(light_ambient_location, 1, glm::value_ptr(light_ambient));
   glUniform3fv(light_diffuse_location, 1, glm::value_ptr(light_diffuse));
   glUniform3fv(light_specular_location, 1, glm::value_ptr(light_specular));
+  glUniform3fv(light_position_location2, 1, glm::value_ptr(light_pos2));
+  glUniform3fv(light_ambient_location2, 1, glm::value_ptr(light_ambient2));
+  glUniform3fv(light_diffuse_location2, 1, glm::value_ptr(light_diffuse2));
+  glUniform3fv(light_specular_location2, 1, glm::value_ptr(light_specular2));
   glUniform3fv(material_ambient_location, 1, glm::value_ptr(material_ambient));
   glUniform3fv(material_diffuse_location, 1, glm::value_ptr(material_diffuse));
   glUniform3fv(material_specular_location, 1, glm::value_ptr(material_specular));
   glUniform1f(material_shininess_location, material_shininess);
   glUniform3fv(cam_pos_location, 1, glm::value_ptr(camera_pos));
 
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+
+  // Draw pyramid
+  glBindVertexArray(pyramid_vao);
   glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
