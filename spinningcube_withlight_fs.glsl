@@ -21,8 +21,8 @@ in vec3 vs_normal;
 in vec2 vs_tex_coord;
 
 uniform Material material;
-uniform Light light;
-uniform vec3 view_pos;
+uniform Light light, light2;
+uniform vec3 view_pos, view_pos2;
 
 void main() {
   // Ambient
@@ -40,6 +40,20 @@ void main() {
   float spec = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
   vec3 specular = light.specular * spec * material.specular;
 
-  vec3 result = ambient + diffuse + specular;
+  // Ambient other light
+  vec3 ambient2 = light2.ambient * material.ambient;
+  vec3 light_dir2 = normalize(light2.position - frag_3Dpos);
+  
+  // Diffuse other light
+  float diff2 = max(dot(vs_normal, light_dir2), 0.0);
+  vec3 diffuse2 = light2.diffuse * diff2 * material.diffuse;
+  
+  // Specular
+  vec3 view_dir2 = normalize(view_pos2 - frag_3Dpos);
+  vec3 reflect_dir2 = reflect(-light_dir2, vs_normal);
+  float spec2 = pow(max(dot(view_dir2, reflect_dir2), 0.0), material.shininess);
+  vec3 specular2 = light2.specular * spec2 * material.specular;
+
+  vec3 result = ambient + diffuse + specular + ambient2 + diffuse2 + specular2;
   frag_col = vec4(result, 1.0);
 }
