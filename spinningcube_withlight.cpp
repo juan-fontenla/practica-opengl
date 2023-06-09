@@ -14,6 +14,9 @@
 
 #include "textfile.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 int gl_width = 640;
 int gl_height = 480;
 
@@ -30,6 +33,8 @@ GLint light_position_location, light_ambient_location, light_diffuse_location, l
 GLint light_position_location2, light_ambient_location2, light_diffuse_location2, light_specular_location2; // Uniforms for second light
 GLint material_diffuse_location, material_specular_location, material_shininess_location, material_ambient_location; // Uniforms for material
 GLint cam_pos_location;
+
+unsigned int diffuseMap;
 
 // Shader names
 const char *vertexFileName = "spinningcube_withlight_vs.glsl";
@@ -55,6 +60,44 @@ glm::vec3 material_ambient(1.0f, 0.5f, 0.31f);
 glm::vec3 material_diffuse(1.0f, 0.5f, 0.31f);
 glm::vec3 material_specular(0.5f, 0.5f, 0.5f);
 const GLfloat material_shininess = 32.0f;
+
+// utility function for loading a 2D texture from file
+// ---------------------------------------------------
+unsigned int loadTexture(char const * path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
 
 int main() {
   // start GL context and O/S window using the GLFW helper library
@@ -164,53 +207,53 @@ int main() {
   //       6        5
   //
   const GLfloat vertex_positions[] = {
-    -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 1
-    -0.25f,  0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 0
-     0.25f, -0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 2
+    -0.25f, -0.25f, -0.25f,   0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // 1
+    -0.25f,  0.25f, -0.25f,   0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // 0
+     0.25f, -0.25f, -0.25f,   0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // 2
 
-     0.25f,  0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 3
-     0.25f, -0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 2
-    -0.25f,  0.25f, -0.25f,   0.0f, 0.0f, -1.0f, // 0
+     0.25f,  0.25f, -0.25f,   0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // 3
+     0.25f, -0.25f, -0.25f,   0.0f, 0.0f, -1.0f, 0.0f, 1.0f, // 2
+    -0.25f,  0.25f, -0.25f,   0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // 0
 
-     0.25f, -0.25f, -0.25f,   1.0f, 0.0f, 0.0f,  // 2
-     0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,  // 3
-     0.25f, -0.25f,  0.25f,   1.0f, 0.0f, 0.0f,  // 5
+     0.25f, -0.25f, -0.25f,   1.0f, 0.0f, 0.0f,  0.0f, 0.0f, // 2
+     0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,  1.0f, 0.0f, // 3
+     0.25f, -0.25f,  0.25f,   1.0f, 0.0f, 0.0f,  0.0f, 1.0f, // 5
 
-     0.25f,  0.25f,  0.25f,   1.0f, 0.0f, 0.0f,  // 4
-     0.25f, -0.25f,  0.25f,   1.0f, 0.0f, 0.0f,  // 5
-     0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,  // 3
+     0.25f,  0.25f,  0.25f,   1.0f, 0.0f, 0.0f,  1.0f, 1.0f, // 4
+     0.25f, -0.25f,  0.25f,   1.0f, 0.0f, 0.0f,  0.0f, 1.0f, // 5
+     0.25f,  0.25f, -0.25f,   1.0f, 0.0f, 0.0f,  1.0f, 0.0f, // 3
 
-     0.25f, -0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 5
-     0.25f,  0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 4
-    -0.25f, -0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 6
+     0.25f, -0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  0.0f, 0.0f, // 5
+     0.25f,  0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f, // 4
+    -0.25f, -0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  0.0f, 1.0f, // 6
 
-    -0.25f,  0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 7
-    -0.25f, -0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 6
-     0.25f,  0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  // 4
+    -0.25f,  0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  1.0f, 1.0f, // 7
+    -0.25f, -0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  0.0f, 1.0f, // 6
+     0.25f,  0.25f,  0.25f,   0.0f, 0.0f, 1.0f,  1.0f, 0.0f, // 4
 
-    -0.25f, -0.25f,  0.25f,   -1.0f, 0.0f, 0.0f, // 6
-    -0.25f,  0.25f,  0.25f,   -1.0f, 0.0f, 0.0f, // 7
-    -0.25f, -0.25f, -0.25f,   -1.0f, 0.0f, 0.0f, // 1
+    -0.25f, -0.25f,  0.25f,   -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // 6
+    -0.25f,  0.25f,  0.25f,   -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // 7
+    -0.25f, -0.25f, -0.25f,   -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // 1
 
-    -0.25f,  0.25f, -0.25f,   -1.0f, 0.0f, 0.0f, // 0
-    -0.25f, -0.25f, -0.25f,   -1.0f, 0.0f, 0.0f, // 1
-    -0.25f,  0.25f,  0.25f,   -1.0f, 0.0f, 0.0f, // 7
+    -0.25f,  0.25f, -0.25f,   -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // 0
+    -0.25f, -0.25f, -0.25f,   -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // 1
+    -0.25f,  0.25f,  0.25f,   -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // 7
 
-     0.25f, -0.25f, -0.25f,   0.0f, -1.0f, 0.0f, // 2
-     0.25f, -0.25f,  0.25f,   0.0f, -1.0f, 0.0f, // 5
-    -0.25f, -0.25f, -0.25f,   0.0f, -1.0f, 0.0f, // 1
+     0.25f, -0.25f, -0.25f,   0.0f, -1.0f, 0.0f, 0.0f, 0.0f, // 2
+     0.25f, -0.25f,  0.25f,   0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // 5
+    -0.25f, -0.25f, -0.25f,   0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // 1
 
-    -0.25f, -0.25f,  0.25f,   0.0f, -1.0f, 0.0f, // 6
-    -0.25f, -0.25f, -0.25f,   0.0f, -1.0f, 0.0f, // 1
-     0.25f, -0.25f,  0.25f,   0.0f, -1.0f, 0.0f, // 5
+    -0.25f, -0.25f,  0.25f,   0.0f, -1.0f, 0.0f, 1.0f, 1.0f, // 6
+    -0.25f, -0.25f, -0.25f,   0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // 1
+     0.25f, -0.25f,  0.25f,   0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // 5
 
-     0.25f,  0.25f,  0.25f,   0.0f, 1.0f, 0.0f,  // 4
-     0.25f,  0.25f, -0.25f,   0.0f, 1.0f, 0.0f,  // 3
-    -0.25f,  0.25f,  0.25f,   0.0f, 1.0f, 0.0f,  // 7
+     0.25f,  0.25f,  0.25f,   0.0f, 1.0f, 0.0f,  0.0f, 0.0f, // 4
+     0.25f,  0.25f, -0.25f,   0.0f, 1.0f, 0.0f,  1.0f, 0.0f, // 3
+    -0.25f,  0.25f,  0.25f,   0.0f, 1.0f, 0.0f,  0.0f, 1.0f, // 7
 
-    -0.25f,  0.25f, -0.25f,   0.0f, 1.0f, 0.0f,  // 0
-    -0.25f,  0.25f,  0.25f,   0.0f, 1.0f, 0.0f,  // 7
-     0.25f,  0.25f, -0.25f,   0.0f, 1.0f, 0.0f,  // 3
+    -0.25f,  0.25f, -0.25f,   0.0f, 1.0f, 0.0f,  1.0f, 1.0f, // 0
+    -0.25f,  0.25f,  0.25f,   0.0f, 1.0f, 0.0f,  0.0f, 1.0f, // 7
+     0.25f,  0.25f, -0.25f,   0.0f, 1.0f, 0.0f,  1.0f, 0.0f, // 3
   };
 
 // Vertex Buffer Object (for vertex coordinates)
@@ -221,12 +264,16 @@ int main() {
 
   // Vertex attributes
   // 0: vertex position (x, y, z)
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), NULL);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), NULL);
   glEnableVertexAttribArray(0);
 
   // 1: vertex normals (x, y, z)
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
   glEnableVertexAttribArray(1);
+
+  // 2: text coords (s, t)
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
 
   // Unbind vbo (it was conveniently registered by VertexAttribPointer)
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -240,22 +287,22 @@ int main() {
 
   const GLfloat pyramid_vertex_positions[] = {
     // Base
-    1.0f,  1.25f, 0.0f,    0.0f, -1.0f, 0.0f,     // 0
-    1.0f,  0.75f, 0.25f,   0.0f, -1.0f, 0.0f,     // 1
-    0.75f, 0.75f, -0.25f,  0.0f, -1.0f, 0.0f,     // 2
+    1.0f,  1.25f, 0.0f,    0.0f,      -1.0f,    0.0f,      0.5f, 0.0f, // 0
+    1.0f,  0.75f, 0.25f,   0.0f,      -1.0f,    0.0f,      1.0f, 1.0f, // 1
+    0.75f, 0.75f, -0.25f,  0.0f,      -1.0f,    0.0f,      0.0f, 1.0f, // 2
 
     // Sides
-    1.0f,  1.25f, 0.0f,    0.30151f, 0.90453f, -0.30151f, // 0
-    0.75f, 0.75f, -0.25f,  0.30151f, 0.90453f, -0.30151f, // 2
-    1.25f, 0.75f, -0.25f,  0.30151f, 0.90453f, -0.30151f,  // 3
+    1.0f,  1.25f, 0.0f,    0.30151f,  0.90453f, -0.30151f, 0.5f, 0.0f, // 0
+    0.75f, 0.75f, -0.25f,  0.30151f,  0.90453f, -0.30151f, 1.0f, 1.0f, // 2
+    1.25f, 0.75f, -0.25f,  0.30151f,  0.90453f, -0.30151f, 0.0f, 1.0f, // 3
 
-    1.0f,  1.25f, 0.0f,    0.90453f, 0.30151f, 0.30151f, // 0
-    1.25f, 0.75f, -0.25f,  0.90453f, 0.30151f, 0.30151f, // 3
-    1.0f,  0.75f, 0.25f,   0.90453f, 0.30151f, 0.30151f, // 1
+    1.0f,  1.25f, 0.0f,    0.90453f,  0.30151f, 0.30151f,  0.5f, 0.0f, // 0
+    1.25f, 0.75f, -0.25f,  0.90453f,  0.30151f, 0.30151f,  1.0f, 1.0f, // 3
+    1.0f,  0.75f, 0.25f,   0.90453f,  0.30151f, 0.30151f,  0.0f, 1.0f, // 1
 
-    0.75f, 0.75f, -0.25f,  -0.90453f, 0.30151f, 0.30151f,  // 1
-    1.0f,  0.75f, 0.25f,   -0.90453f, 0.30151f, 0.30151f, // 2
-    1.25f, 0.75f, -0.25f,  -0.90453f, 0.30151f, 0.30151f  // 3
+    0.75f, 0.75f, -0.25f,  -0.90453f, 0.30151f, 0.30151f,  0.5f, 0.0f, // 1
+    1.0f,  0.75f, 0.25f,   -0.90453f, 0.30151f, 0.30151f,  1.0f, 1.0f, // 2
+    1.25f, 0.75f, -0.25f,  -0.90453f, 0.30151f, 0.30151f,  0.0f, 1.0f, // 3
   };
 
 // Vertex Buffer Object (for pyramid vertex coordinates)
@@ -266,18 +313,26 @@ int main() {
 
   // Vertex attributes
   // 0: vertex position (x, y, z)
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), NULL);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), NULL);
   glEnableVertexAttribArray(0);
 
   // 1: vertex normals (x, y, z)
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
   glEnableVertexAttribArray(1);
+
+  // 2: text coords (s, t)
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
 
   // Unbind vbo (it was conveniently registered by VertexAttribPointer)
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   // Unbind vao
   glBindVertexArray(0);
+
+  // load textures (we now use a utility function to keep the code more organized)
+  // -----------------------------------------------------------------------------
+  diffuseMap = loadTexture("texture.png");
 
   // Uniforms
   // - Model matrix
@@ -302,7 +357,6 @@ int main() {
   light_specular_location2 = glGetUniformLocation(shader_program, "light2.specular");
   material_diffuse_location = glGetUniformLocation(shader_program, "material.diffuse");
   material_specular_location = glGetUniformLocation(shader_program, "material.specular");
-  material_ambient_location = glGetUniformLocation(shader_program, "material.ambient");
   material_shininess_location = glGetUniformLocation(shader_program, "material.shininess");
 
 // Render loop
@@ -328,6 +382,9 @@ void render(double currentTime) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glViewport(0, 0, gl_width, gl_height);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, diffuseMap);
 
   glUseProgram(shader_program);
   glBindVertexArray(vao);
@@ -374,8 +431,6 @@ void render(double currentTime) {
   glUniform3fv(light_ambient_location2, 1, glm::value_ptr(light_ambient2));
   glUniform3fv(light_diffuse_location2, 1, glm::value_ptr(light_diffuse2));
   glUniform3fv(light_specular_location2, 1, glm::value_ptr(light_specular2));
-  glUniform3fv(material_ambient_location, 1, glm::value_ptr(material_ambient));
-  glUniform3fv(material_diffuse_location, 1, glm::value_ptr(material_diffuse));
   glUniform3fv(material_specular_location, 1, glm::value_ptr(material_specular));
   glUniform1f(material_shininess_location, material_shininess);
   glUniform3fv(cam_pos_location, 1, glm::value_ptr(camera_pos));
@@ -383,6 +438,8 @@ void render(double currentTime) {
   glDrawArrays(GL_TRIANGLES, 0, 36);
 
   // Draw pyramid
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, diffuseMap);
   glBindVertexArray(pyramid_vao);
   glDrawArrays(GL_TRIANGLES, 0, 36);
 }
