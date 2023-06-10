@@ -2,7 +2,7 @@
 
 struct Material {
   sampler2D diffuse;
-  vec3 specular;
+  sampler2D specular;
   float shininess;
 };
 
@@ -37,7 +37,7 @@ void main() {
   vec3 view_dir = normalize(view_pos - frag_3Dpos);
   vec3 reflect_dir = reflect(-light_dir, vs_normal);
   float spec = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
-  vec3 specular = light.specular * spec * material.specular;
+  vec3 specular = light.specular * spec * vec3(texture(material.specular, vs_tex_coord));
 
   // Ambient other light
   vec3 ambient2 = light2.ambient * vec3(texture(material.diffuse, vs_tex_coord));
@@ -51,7 +51,7 @@ void main() {
   vec3 view_dir2 = normalize(view_pos2 - frag_3Dpos);
   vec3 reflect_dir2 = reflect(-light_dir2, vs_normal);
   float spec2 = pow(max(dot(view_dir2, reflect_dir2), 0.0), material.shininess);
-  vec3 specular2 = light2.specular * spec2 * material.specular;
+  vec3 specular2 = light2.specular * spec2 * vec3(texture(material.specular, vs_tex_coord));
 
   vec3 result = ambient + diffuse + specular + ambient2 + diffuse2 + specular2;
   frag_col = vec4(result, 1.0);

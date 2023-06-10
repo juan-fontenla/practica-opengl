@@ -34,7 +34,7 @@ GLint light_position_location2, light_ambient_location2, light_diffuse_location2
 GLint material_diffuse_location, material_specular_location, material_shininess_location, material_ambient_location; // Uniforms for material
 GLint cam_pos_location;
 
-unsigned int diffuseMap;
+unsigned int diffuseMap, specularMap;
 
 // Shader names
 const char *vertexFileName = "spinningcube_withlight_vs.glsl";
@@ -56,9 +56,6 @@ glm::vec3 light_diffuse2(0.5f, 0.5f, 0.5f);
 glm::vec3 light_specular2(1.0f, 1.0f, 1.0f);
 
 // Material
-glm::vec3 material_ambient(1.0f, 0.5f, 0.31f);
-glm::vec3 material_diffuse(1.0f, 0.5f, 0.31f);
-glm::vec3 material_specular(0.5f, 0.5f, 0.5f);
 const GLfloat material_shininess = 32.0f;
 
 // utility function for loading a 2D texture from file
@@ -333,6 +330,7 @@ int main() {
   // load textures (we now use a utility function to keep the code more organized)
   // -----------------------------------------------------------------------------
   diffuseMap = loadTexture("texture.png");
+  specularMap = loadTexture("specular.png");
 
   // Uniforms
   // - Model matrix
@@ -385,6 +383,8 @@ void render(double currentTime) {
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, diffuseMap);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, specularMap);
 
   glUseProgram(shader_program);
   glBindVertexArray(vao);
@@ -431,7 +431,6 @@ void render(double currentTime) {
   glUniform3fv(light_ambient_location2, 1, glm::value_ptr(light_ambient2));
   glUniform3fv(light_diffuse_location2, 1, glm::value_ptr(light_diffuse2));
   glUniform3fv(light_specular_location2, 1, glm::value_ptr(light_specular2));
-  glUniform3fv(material_specular_location, 1, glm::value_ptr(material_specular));
   glUniform1f(material_shininess_location, material_shininess);
   glUniform3fv(cam_pos_location, 1, glm::value_ptr(camera_pos));
 
@@ -440,6 +439,8 @@ void render(double currentTime) {
   // Draw pyramid
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, diffuseMap);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, specularMap);
   glBindVertexArray(pyramid_vao);
   glDrawArrays(GL_TRIANGLES, 0, 36);
 }
