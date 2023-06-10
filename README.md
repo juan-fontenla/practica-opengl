@@ -1,6 +1,6 @@
 # practica-opengl
 
-Neste repositorio atópase o código para a resolución dos exercicios do 1 ao 4 da parte de iluminación con Phong.
+Neste repositorio atópase o código para a resolución dos exercicios do 1 ao 4 da parte de iluminación con Phong. En cada exercicio, inclúese un ficheiro `parteX.gif` como mostra da execución do programa
 
 ## Versións
 
