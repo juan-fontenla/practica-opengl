@@ -1,5 +1,12 @@
 # practica-opengl
 
+## Membros
+
+Juan Manuel Fontenla Valiña - juan.fontenla@udc.es
+Erick Jesús Morales Pombo - erick.morales.pombo@udc.es
+
+## Contido do repositorio
+
 Neste repositorio atópase o código para a resolución dos exercicios do 1 ao 4 da parte de iluminación con Phong. En cada exercicio, inclúese un ficheiro `parteX.gif` como mostra da execución do programa
 
 ## Versións
